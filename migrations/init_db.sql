@@ -5,7 +5,7 @@ name varchar(64) not null);
 CREATE TABLE app_user
 (id serial PRIMARY KEY,
 app_user_role_id bigint not null REFERENCES app_user_role(id),
-name varchar(64) not null,
+name varchar(256) not null,
 password text not null,
 last_update_date timestamp with time zone not null default CURRENT_TIMESTAMP
 );
@@ -39,9 +39,10 @@ name varchar(256) not null);
 
 CREATE TABLE book
 (id serial PRIMARY KEY,
-name varchar(64) not null,
+name varchar(512) not null,
 genre_id bigint not null REFERENCES genre(id),
 author_id bigint not null REFERENCES author(id),
 language_id bigint not null REFERENCES language(id),
+user_id bigint not null REFERENCES app_user(id),
 last_update_date timestamp with time zone not null default CURRENT_TIMESTAMP
 );

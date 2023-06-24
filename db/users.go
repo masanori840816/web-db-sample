@@ -3,16 +3,11 @@ package db
 import (
 	"context"
 	"database/sql"
-	"encoding/base64"
 	"fmt"
-	"math/big"
-
-	"crypto/rand"
-	"crypto/sha512"
 
 	"github.com/uptrace/bun"
-	"golang.org/x/crypto/pbkdf2"
 
+	auth "github.com/web-db-sample/auth"
 	dto "github.com/web-db-sample/dto"
 	models "github.com/web-db-sample/models"
 )
@@ -50,13 +45,11 @@ func (u Users) CraeteUser(ctx *context.Context, user dto.AppUserForUpdate) error
 	if exists {
 		return fmt.Errorf("USER NAME IS ALREADY EXITS:%s", user.Name)
 	}
-	salt, err := generateRandomSalt(128 / 8)
+
+	hashedPassword, err := auth.GeneratePasswordHash(user.Password)
 	if err != nil {
 		return err
 	}
-	// Get base 64 encoded Hasu value to save the password
-	key := pbkdf2.Key([]byte(user.Password), salt, 100_000, 256/8, sha512.New)
-	hashedPassword := base64.StdEncoding.EncodeToString(key)
 	// Insert new user
 	newUser := models.NewAppUsers(user.RoleID, user.Name, hashedPassword)
 	_, err = tx.NewInsert().Model(newUser).Exec(*ctx)
@@ -101,19 +94,6 @@ func (u Users) GetAllUsersForView(ctx *context.Context) ([]dto.AppUserForView, e
 		`).Scan(*ctx, &results)
 	if err != nil {
 		return nil, err
-	}
-	return results, nil
-}
-
-// Generate a salt value
-func generateRandomSalt(length int) ([]byte, error) {
-	results := make([]byte, length)
-	for i := 0; i < length; i++ {
-		salt, err := rand.Int(rand.Reader, big.NewInt(255))
-		if err != nil {
-			return nil, err
-		}
-		results[i] = byte(salt.Int64())
 	}
 	return results, nil
 }
