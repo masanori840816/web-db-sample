@@ -7,8 +7,8 @@ import (
 
 	"github.com/uptrace/bun"
 
-	auth "github.com/web-db-sample/auth"
 	dto "github.com/web-db-sample/dto"
+	hash "github.com/web-db-sample/hash"
 	models "github.com/web-db-sample/models"
 )
 
@@ -46,7 +46,7 @@ func (u Users) CraeteUser(ctx *context.Context, user dto.AppUserForUpdate) error
 		return fmt.Errorf("USER NAME IS ALREADY EXITS:%s", user.Name)
 	}
 
-	hashedPassword, err := auth.GeneratePasswordHash(user.Password)
+	hashedPassword, err := hash.GeneratePasswordHash(user.Password)
 	if err != nil {
 		return err
 	}
@@ -96,4 +96,26 @@ func (u Users) GetAllUsersForView(ctx *context.Context) ([]dto.AppUserForView, e
 		return nil, err
 	}
 	return results, nil
+}
+func (u Users) Signin(ctx *context.Context, value dto.SigninValues) (bool, int64, error) {
+	user := new(models.AppUsers)
+	err := u.db.NewSelect().
+		Model(user).
+		Where("name=?", value.UserName).
+		Limit(1).
+		Scan(*ctx)
+	if err != nil {
+		// ignore no rows error
+		if err != sql.ErrNoRows {
+			return false, -1, err
+		}
+	}
+	result, err := hash.VerifyPassword(value.Password, user.Password)
+	if err != nil {
+		return false, -1, err
+	}
+	if result {
+		return result, user.ID, nil
+	}
+	return result, -1, nil
 }
