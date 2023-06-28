@@ -77,6 +77,37 @@ func (u Users) GetUser(ctx *context.Context, userId int64) (*models.AppUsers, er
 	}
 	return user, nil
 }
+func (u Users) UpdateUser(ctx *context.Context, user dto.AppUserForUpdate) error {
+	tx, err := u.db.BeginTx(*ctx, &sql.TxOptions{})
+	if err != nil {
+		return err
+	}
+	existedUser, err := u.GetUser(ctx, user.ID)
+	if err != nil {
+		return err
+	}
+	hashedPassword, err := hash.GeneratePasswordHash(user.Password)
+	if err != nil {
+		return err
+	}
+	existedUser.Update(user.RoleID, user.Name, hashedPassword)
+	res, err := tx.NewUpdate().Model(existedUser).WherePK().Exec(*ctx)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	r, err := res.RowsAffected()
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	if r != 1 {
+		tx.Rollback()
+		return err
+	}
+	tx.Commit()
+	return nil
+}
 func (u Users) GetAllUsersForView(ctx *context.Context) ([]dto.AppUserForView, error) {
 	/*roles := make([]models.AppUserRoles, 0)
 	err := u.db.NewSelect().

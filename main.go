@@ -1,7 +1,7 @@
 package main
 
 import (
-	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -35,25 +35,30 @@ func (t *templateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	dbCtx := db.NewBookshelfContext()
-	ctx := context.Background()
 
-	sampleUser := dto.AppUserForUpdate{
-		RoleID:   1,
-		Name:     "Masa",
-		Password: "Sample",
-	}
-	err := sampleUser.Validate()
-	if err != nil {
-		log.Panicln(err.Error())
-	}
-	u, err := dbCtx.Users.GetUser(&ctx, 1)
-	if err != nil {
-		log.Panicln(err.Error())
-	}
-	log.Println(u)
 	http.Handle("/js/", http.FileServer(http.Dir("templates")))
 	http.HandleFunc("/signin", func(w http.ResponseWriter, r *http.Request) {
-
+		w.Header().Set("Content-Type", "application/json")
+		result := &dto.SigninResult{}
+		signinResult, err := auth.Signin(w, r, dbCtx)
+		if err != nil {
+			log.Println(err.Error())
+			result.Succeeded = false
+			result.ErrorMessage = "Sever Error"
+			resultJSON, _ := json.Marshal(result)
+			w.Write(resultJSON)
+			return
+		}
+		if signinResult {
+			result.Succeeded = true
+			result.ErrorMessage = ""
+			result.NextURL = baseURL
+		} else {
+			result.Succeeded = false
+			result.ErrorMessage = "Invalid user name or password"
+		}
+		resultJSON, _ := json.Marshal(result)
+		w.Write(resultJSON)
 	})
 	http.Handle("/", &templateHandler{})
 	log.Fatal(http.ListenAndServe("localhost:8081", nil))

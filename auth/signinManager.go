@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -27,8 +28,11 @@ func Signin(w http.ResponseWriter, r *http.Request, dbCtx *db.BookshelfContext) 
 	if err != nil {
 		return false, err
 	}
+
 	ctx := context.Background()
 	result, userID, err := dbCtx.Users.Signin(&ctx, *signinValue)
+
+	log.Println(err)
 	if err != nil {
 		return false, err
 	}

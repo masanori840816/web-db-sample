@@ -16,10 +16,16 @@ type AppUsers struct {
 	Role           *AppUserRoles `bun:"rel:has-one,join:app_user_role_id=id"`
 }
 
-func NewAppUsers(roleId int64, name string, hashedPassword string) *AppUsers {
+func NewAppUsers(roleID int64, name string, hashedPassword string) *AppUsers {
 	return &AppUsers{
-		RoleID:   roleId,
+		RoleID:   roleID,
 		Name:     name,
 		Password: hashedPassword,
 	}
+}
+func (u *AppUsers) Update(roleID int64, name string, hashedPassword string) {
+	u.RoleID = roleID
+	u.Name = name
+	u.Password = hashedPassword
+	u.LastUpdateDate = time.Now()
 }

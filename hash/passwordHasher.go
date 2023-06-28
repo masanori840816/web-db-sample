@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"crypto/sha512"
 	"encoding/base64"
+	"log"
 
 	"golang.org/x/crypto/pbkdf2"
 
@@ -24,6 +25,7 @@ func GeneratePasswordHash(password string) (string, error) {
 }
 func VerifyPassword(inputPassword string, hashedPassword string) (bool, error) {
 	decodedPassword, err := base64.URLEncoding.DecodeString(hashedPassword)
+	log.Printf(string(decodedPassword))
 	if err != nil {
 		return false, err
 	}
@@ -36,6 +38,8 @@ func VerifyPassword(inputPassword string, hashedPassword string) (bool, error) {
 	return bytes.Equal(hashedInput, decodedPassword), nil
 }
 func generateHash(original string, salt []byte, iterateCount int, keyLength int) []byte {
+	log.Printf("Gen O:%s S:%s C: %d L: %d", original, string(salt), iterateCount, keyLength)
+
 	// Get base 64 encoded Hasu value to save the password
 	key := pbkdf2.Key([]byte(original), salt, iterateCount, keyLength, sha512.New)
 	// Add the iterate count, salt, salt length.

@@ -3,7 +3,7 @@ window.SigninPage = {
         const userName = document.getElementById("signin_user_name") as HTMLInputElement;
         const password = document.getElementById("signin_password_input") as HTMLInputElement;
 
-        fetch(`${baseUrl}/signin`,{
+        fetch(`${baseUrl}signin`,{
             method: "POST",
             body: JSON.stringify({
                 userName: userName.value, 
