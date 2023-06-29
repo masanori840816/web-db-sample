@@ -8,17 +8,17 @@ import (
 	"path/filepath"
 	"sync"
 	"text/template"
+	"time"
 
 	auth "github.com/web-db-sample/auth"
 	db "github.com/web-db-sample/db"
 	dto "github.com/web-db-sample/dto"
 )
 
-const baseURL = "http://localhost:8081/"
-
 type templateHandler struct {
-	once  sync.Once
-	templ *template.Template
+	once     sync.Once
+	templ    *template.Template
+	settings *AppSettings
 }
 
 func (t *templateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -33,8 +33,11 @@ func (t *templateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	dbCtx := db.NewBookshelfContext()
-
+	settings, err := NewAppSettings()
+	if err != nil {
+		log.Panicln(err.Error())
+	}
+	dbCtx := db.NewBookshelfContext(settings.ConnectionString)
 	http.Handle("/js/", http.FileServer(http.Dir("templates")))
 	http.Handle("/img/", http.FileServer(http.Dir("templates")))
 	http.HandleFunc("/signin", func(w http.ResponseWriter, r *http.Request) {
@@ -52,7 +55,7 @@ func main() {
 		if signinResult {
 			result.Succeeded = true
 			result.ErrorMessage = ""
-			result.NextURL = baseURL
+			result.NextURL = settings.BaseURL
 		} else {
 			result.Succeeded = false
 			result.ErrorMessage = "Invalid user name or password"
@@ -60,20 +63,24 @@ func main() {
 		resultJSON, _ := json.Marshal(result)
 		w.Write(resultJSON)
 	})
-	http.Handle("/", &templateHandler{})
-	log.Fatal(http.ListenAndServe("localhost:8081", nil))
+	http.Handle("/", &templateHandler{settings: &settings})
+	log.Fatal(http.ListenAndServe(fmt.Sprintf("%s:%d", settings.Host, settings.Port), nil))
 }
 func handleSigninPageRequest(w http.ResponseWriter, r *http.Request, t *templateHandler) {
 	t.once.Do(func() {
 		// "Must()" wraps "ParseFiles()" results, so I can put it into "templateHandler.templ" directly
 		t.templ = template.Must(template.ParseFiles(filepath.Join("templates", "signin.html")))
 	})
-	t.templ.Execute(w, baseURL)
+	t.templ.Execute(w, t.settings.BaseURL)
 }
 func handleMainPageRequest(w http.ResponseWriter, r *http.Request, t *templateHandler) {
 	authenticated, usedID := auth.VerifyToken(w, r)
 	if !authenticated {
-		http.Redirect(w, r, fmt.Sprintf("%spages/signin", baseURL), http.StatusFound)
+		expiration := time.Now()
+		expiration = expiration.Add(time.Hour)
+		cookie := http.Cookie{Name: "RedirectURL", Value: t.settings.BaseURL, Expires: expiration, HttpOnly: true}
+		http.SetCookie(w, &cookie)
+		http.Redirect(w, r, fmt.Sprintf("%spages/signin", t.settings.BaseURL), http.StatusFound)
 		return
 	}
 	log.Printf("Sign in user ID: %d", usedID)
@@ -81,5 +88,5 @@ func handleMainPageRequest(w http.ResponseWriter, r *http.Request, t *templateHa
 		// "Must()" wraps "ParseFiles()" results, so I can put it into "templateHandler.templ" directly
 		t.templ = template.Must(template.ParseFiles(filepath.Join("templates", "index.html")))
 	})
-	t.templ.Execute(w, baseURL)
+	t.templ.Execute(w, t.settings.BaseURL)
 }

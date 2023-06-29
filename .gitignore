@@ -48,3 +48,5 @@ go.work
 ## JavaScript
 node_modules
 templates/js/*
+
+appSettings.json

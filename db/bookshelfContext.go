@@ -13,11 +13,10 @@ type BookshelfContext struct {
 	Users *Users
 }
 
-func NewBookshelfContext() *BookshelfContext {
+func NewBookshelfContext(connectionString string) *BookshelfContext {
 	result := BookshelfContext{}
-	dsn := "postgresql://postgres:postgres@localhost:5432/book_shelf?sslmode=disable"
 	result.db = bun.NewDB(
-		sql.OpenDB(pgdriver.NewConnector(pgdriver.WithDSN(dsn))),
+		sql.OpenDB(pgdriver.NewConnector(pgdriver.WithDSN(connectionString))),
 		pgdialect.New(),
 	)
 	result.Users = NewUsers(result.db)
