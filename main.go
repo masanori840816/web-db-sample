@@ -85,7 +85,6 @@ func handleMainPageRequest(w http.ResponseWriter, r *http.Request, t *templateHa
 	}
 	log.Printf("Sign in user ID: %d", usedID)
 	t.once.Do(func() {
-		// "Must()" wraps "ParseFiles()" results, so I can put it into "templateHandler.templ" directly
 		t.templ = template.Must(template.ParseFiles(filepath.Join("templates", "index.html")))
 	})
 	t.templ.Execute(w, t.settings.BaseURL)

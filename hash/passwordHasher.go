@@ -25,16 +25,25 @@ func GeneratePasswordHash(password string) (string, error) {
 }
 func VerifyPassword(inputPassword string, hashedPassword string) (bool, error) {
 	decodedPassword, err := base64.URLEncoding.DecodeString(hashedPassword)
-	log.Printf(string(decodedPassword))
 	if err != nil {
 		return false, err
 	}
-	iterateCount := readNetworkByteOrder(decodedPassword, 0)
-	saltLength := readNetworkByteOrder(decodedPassword, 4)
-	salt := make([]byte, saltLength)
-	blockCopy(decodedPassword, fixedPasswordLength, salt, 0, int(saltLength))
-	hashedInput := generateHash(inputPassword, salt, int(iterateCount),
-		len(decodedPassword)-(int(saltLength)+fixedPasswordLength))
+	var iterateCount uint
+	var salt []byte
+	var keyLength int
+	if len(hashedPassword) <= 0 {
+		iterateCount = 100_000
+		salt, _ = generateRandomSalt(128 / 8)
+		keyLength = 256 / 8
+	} else {
+		iterateCount = readNetworkByteOrder(decodedPassword, 0)
+		saltLength := readNetworkByteOrder(decodedPassword, 4)
+		salt = make([]byte, saltLength)
+		blockCopy(decodedPassword, fixedPasswordLength, salt, 0, int(saltLength))
+		keyLength = len(decodedPassword) - (int(saltLength) + fixedPasswordLength)
+	}
+
+	hashedInput := generateHash(inputPassword, salt, int(iterateCount), keyLength)
 	return bytes.Equal(hashedInput, decodedPassword), nil
 }
 func generateHash(original string, salt []byte, iterateCount int, keyLength int) []byte {
