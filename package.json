@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "build.signin": "node ./esbuilds/signin.build.mjs",
+    "build.main": "node ./esbuilds/main.build.mjs",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Masui Masanori",

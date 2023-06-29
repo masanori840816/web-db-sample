@@ -63,6 +63,16 @@ func main() {
 		resultJSON, _ := json.Marshal(result)
 		w.Write(resultJSON)
 	})
+	http.HandleFunc("/signout", func(w http.ResponseWriter, r *http.Request) {
+		auth.Signout(w)
+		result := &dto.SigninResult{
+			Succeeded: true,
+			NextURL:   fmt.Sprintf("%spages/signin", settings.BaseURL),
+		}
+		resultJson, _ := json.Marshal(result)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(resultJson)
+	})
 	http.Handle("/", &templateHandler{settings: &settings})
 	log.Fatal(http.ListenAndServe(fmt.Sprintf("%s:%d", settings.Host, settings.Port), nil))
 }

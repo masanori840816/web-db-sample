@@ -1,3 +1,5 @@
+import { isSigninResult } from "./signinResult";
+
 window.SigninPage = {
     signin(baseUrl: string) {
         const userName = document.getElementById("signin_user_name") as HTMLInputElement;
@@ -11,7 +13,18 @@ window.SigninPage = {
             }),
         })
         .then(res => res.json())
-        .then(json => console.log(json))
+        .then(j => {
+            const errorMessage = document.getElementById("signin_error_message") as HTMLElement;
+            if(isSigninResult(j)) {
+                if(j.succeeded === false) {
+                    errorMessage.textContent = j.errorMessage;
+                    return;
+                }
+                location.href = j.nextUrl;
+            } else {
+                errorMessage.textContent = "Sign in error";
+            }
+        })
         .catch(err => console.error(err));
     }
 }
