@@ -22,7 +22,6 @@ type templateHandler struct {
 }
 
 func (t *templateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	log.Println(r.URL.Path)
 	switch r.URL.Path {
 	case "/":
 		handleMainPageRequest(w, r, t)
@@ -37,6 +36,7 @@ func main() {
 	dbCtx := db.NewBookshelfContext()
 
 	http.Handle("/js/", http.FileServer(http.Dir("templates")))
+	http.Handle("/img/", http.FileServer(http.Dir("templates")))
 	http.HandleFunc("/signin", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		result := &dto.SigninResult{}
@@ -76,7 +76,6 @@ func handleMainPageRequest(w http.ResponseWriter, r *http.Request, t *templateHa
 		http.Redirect(w, r, fmt.Sprintf("%spages/signin", baseURL), http.StatusFound)
 		return
 	}
-	log.Println(authenticated)
 	log.Printf("Sign in user ID: %d", usedID)
 	t.once.Do(func() {
 		// "Must()" wraps "ParseFiles()" results, so I can put it into "templateHandler.templ" directly
